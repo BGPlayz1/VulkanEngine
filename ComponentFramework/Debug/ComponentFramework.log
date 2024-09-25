@@ -1,10 +1,17 @@
-﻿  VulkanRenderer.cpp
+﻿  Scene0.cpp
+  This is wrong: Vec4 cross(const Vec4& a, const Vec4& b)
+  This questionable: Vec4 inverse(const Vec4& v)
+  SceneManager.cpp
+  This is wrong: Vec4 cross(const Vec4& a, const Vec4& b)
+  This questionable: Vec4 inverse(const Vec4& v)
+  VulkanRenderer.cpp
   This is wrong: Vec4 cross(const Vec4& a, const Vec4& b)
   This questionable: Vec4 inverse(const Vec4& v)
 C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\tiny_obj_loader.h(1665,27): warning C4018: '<': signed/unsigned mismatch
-C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(509,35): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
-C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(532,34): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
-C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(768,34): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(510,35): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(533,34): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(767,76): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
+  Generating Code...
   ComponentFramework.vcxproj -> C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\Debug\ComponentFramework.exe
   'pwsh.exe' is not recognized as an internal or external command,
   operable program or batch file.

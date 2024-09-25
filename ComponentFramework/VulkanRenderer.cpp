@@ -256,21 +256,22 @@ void VulkanRenderer::CreateDescriptorSetLayout() {
     uboLayoutBinding.pImmutableSamplers = nullptr;
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-    samplerLayoutBinding.binding = 1;
-    samplerLayoutBinding.descriptorCount = 1;
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerLayoutBinding.pImmutableSamplers = nullptr;
-    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
     VkDescriptorSetLayoutBinding lboLayoutBinding{};
-    lboLayoutBinding.binding = 2;
+    lboLayoutBinding.binding = 1;
     lboLayoutBinding.descriptorCount = 1;
     lboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     lboLayoutBinding.pImmutableSamplers = nullptr;
     lboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    std::array<VkDescriptorSetLayoutBinding, 3> bindings = { uboLayoutBinding,lboLayoutBinding, samplerLayoutBinding };
+    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+    samplerLayoutBinding.binding = 2;
+    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerLayoutBinding.pImmutableSamplers = nullptr;
+    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+
+    std::array<VkDescriptorSetLayoutBinding, 3> bindings = { uboLayoutBinding, lboLayoutBinding, samplerLayoutBinding };
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -630,7 +631,7 @@ void VulkanRenderer::CreateDescriptorSets() {
 
         descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[1].dstSet = descriptorSets[i];
-        descriptorWrites[1].dstBinding = 2;
+        descriptorWrites[1].dstBinding = 1;
         descriptorWrites[1].dstArrayElement = 0;
         descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         descriptorWrites[1].descriptorCount = 1;
@@ -638,7 +639,7 @@ void VulkanRenderer::CreateDescriptorSets() {
 
         descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[2].dstSet = descriptorSets[i];
-        descriptorWrites[2].dstBinding = 1;
+        descriptorWrites[2].dstBinding = 2;
         descriptorWrites[2].dstArrayElement = 0;
         descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         descriptorWrites[2].descriptorCount = 1;
@@ -759,18 +760,22 @@ void VulkanRenderer::UpdateUniformBuffer(uint32_t currentImage) {
     for (const auto& UBOName : uniformBufferMap) {
 
         BufferType bufferType = UBOName.first;
-        VkDeviceSize test1 = uniformBufferMap[bufferType][currentImage].bufferMemoryLength;
-        VkDeviceSize test2 = sizeof(LightUBO);
-        vkMapMemory(device, uniformBufferMap[bufferType][currentImage].bufferMemoryID, 0, test1, 0, &data);
+
+        vkMapMemory(device, uniformBufferMap[bufferType][currentImage].bufferMemoryID, 0, uniformBufferMap[bufferType][currentImage].bufferMemoryLength, 0, &data);
 
         void* addressUBO = UBOMap[bufferType];
-        void* test = &cameraUBO;
-        memcpy(data, addressUBO, test1);
+        memcpy(data, addressUBO, uniformBufferMap[bufferType][currentImage].bufferMemoryLength);
         vkUnmapMemory(device, uniformBufferMap[UBOName.first][currentImage].bufferMemoryID);
     }
-  /*  vkMapMemory(device, uniformBufferMap[BufferType::CameraUBO][currentImage].bufferMemoryID, 0, sizeof(CameraUBO), 0, &data);
+
+
+ /*   vkMapMemory(device, uniformBufferMap[BufferType::CameraUBO][currentImage].bufferMemoryID, 0, sizeof(CameraUBO), 0, &data);
     memcpy(data, &cameraUBO, sizeof(CameraUBO));
-    vkUnmapMemory(device, uniformBufferMap[BufferType::CameraUBO][currentImage].bufferMemoryID);*/
+    vkUnmapMemory(device, uniformBufferMap[BufferType::CameraUBO][currentImage].bufferMemoryID);
+    vkMapMemory(device, uniformBufferMap[BufferType::LightUBO][currentImage].bufferMemoryID, 0, sizeof(LightUBO), 0, &data);
+    memcpy(data, &lightUBO, sizeof(LightUBO));
+    vkUnmapMemory(device, uniformBufferMap[BufferType::LightUBO][currentImage].bufferMemoryID);*/
+
 
 }
 

@@ -11,8 +11,11 @@ layout(std140,binding = 0) uniform UniformBufferObject {
     mat4 modelMatrix;
 } ubo;
 
-layout(std140,binding = 2) uniform LightBufferObject {
+layout(std140,binding = 1) uniform LightBufferObject {
 	vec4 lightPos;
+	vec4 diffuse;
+    vec4 specular;
+    vec4 ambient;
 } lbo;
 
 layout (location = 0) out vec3 vertNormal;
