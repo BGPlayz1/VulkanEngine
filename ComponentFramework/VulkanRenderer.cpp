@@ -2,6 +2,7 @@
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
+#define TOTAL_NUMBER_OF_DESCRIPTORS 3
 
 
 VulkanRenderer::VulkanRenderer(): /// Initialize all the variables
@@ -271,7 +272,7 @@ void VulkanRenderer::CreateDescriptorSetLayout() {
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 
-    std::array<VkDescriptorSetLayoutBinding, 3> bindings = { uboLayoutBinding, lboLayoutBinding, samplerLayoutBinding };
+    std::array<VkDescriptorSetLayoutBinding, TOTAL_NUMBER_OF_DESCRIPTORS> bindings = { uboLayoutBinding, lboLayoutBinding, samplerLayoutBinding };
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -376,10 +377,17 @@ void VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fr
     colorBlending.blendConstants[2] = 0.0f;
     colorBlending.blendConstants[3] = 0.0f;
 
+    VkPushConstantRange pushConstant{};
+    pushConstant.offset = 0;
+    pushConstant.size = sizeof(PushConstant);
+    pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -560,7 +568,6 @@ std::vector<BufferMemory>  VulkanRenderer::CreateUniformBuffers() {
     return uniformBuffers;
 }
 
-#define TOTAL_NUMBER_OF_DESCRIPTORS 3
 void VulkanRenderer::CreateDescriptorPool() {
     std::array<VkDescriptorPoolSize, TOTAL_NUMBER_OF_DESCRIPTORS> poolSizes{};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -619,7 +626,7 @@ void VulkanRenderer::CreateDescriptorSets() {
         imageInfo.imageView = texture2D.imageView;
         imageInfo.sampler = texture2D.sampler;
 
-        std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, TOTAL_NUMBER_OF_DESCRIPTORS> descriptorWrites{};
 
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = descriptorSets[i];
@@ -750,8 +757,16 @@ void VulkanRenderer::SetCameraUBO(const Matrix4& projection, const Matrix4& view
     //cameraUBO.lightPos = Vec4(0.0f,0.0f,-10.0f,0.0f);
 }
 
-void VulkanRenderer::SetLightUBO(Vec4 lightPos_) {
-    lightUBO.lightPos = lightPos_;
+void VulkanRenderer::SetLightUBO(Vec4 lightPos_, Vec4 specular_, Vec4 diffuse_, float ambient_, size_t index) {
+    if (index >= numLights) {
+        printf("exceeded max lights");
+        return;
+    }
+
+    lightUBO.lightPos[index] = lightPos_;
+    lightUBO.diffuse[index] = diffuse_;
+    lightUBO.specular[index] = specular_;
+    lightUBO.ambient = ambient_ * lightUBO.diffuse[index];
 }
 
 

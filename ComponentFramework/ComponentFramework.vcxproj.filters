@@ -105,5 +105,11 @@
     <None Include="shaders\simplePhong.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="shaders\phong.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\phong.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

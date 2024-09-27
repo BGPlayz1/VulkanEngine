@@ -139,13 +139,22 @@ struct IndexedVertexBuffer {
 struct CameraUBO { /// A UniformBufferObject
     Matrix4 projectionMatrix;
     Matrix4 viewMatrix;
-    Matrix4 modelMatrix; /// This doesn't belong here. We'll fix it. 
+    Matrix4 modelMatrix;
+
+   
 };
 
+struct PushConstant {
+    Matrix4 modelMatrix; 
+    Matrix4 pushConstant;
+};
+
+static const int numLights = 3;
+
 struct LightUBO {
-    Vec4 lightPos;
-    Vec4 diffuse;
-    Vec4 specular;
+    Vec4 lightPos[numLights];
+    Vec4 diffuse[numLights];
+    Vec4 specular[numLights];
     Vec4 ambient;
 };
 
@@ -175,7 +184,7 @@ public: /// Member functions
     
 
     void SetCameraUBO(const Matrix4& projection, const Matrix4& view, const Matrix4& model);
-    void SetLightUBO(Vec4 lightPos_);
+    void SetLightUBO(Vec4 lightPos_, Vec4 specular_, Vec4 diffuse_, float ambient_, size_t index);
     void Create2DTextureImage(const char* texureFile);
     void CreateGraphicsPipeline(const char* vertFile, const char* fragFile);
     void LoadModelIndexed(const char* filename);
@@ -225,6 +234,7 @@ private: /// Private member variables
     VkQueue presentQueue;
     Sampler2D texture2D;
     CameraUBO cameraUBO;
+    static const int numLights = 3;
     LightUBO lightUBO;
     IndexedVertexBuffer indexedVertexBuffer;
     //std::vector<BufferMemory> uniformBuffers;
