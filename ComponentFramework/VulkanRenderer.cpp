@@ -44,12 +44,16 @@ bool VulkanRenderer::OnCreate(){
     createDepthResources();
     createFramebuffers();
     Create2DTextureImage("./textures/mario_fire.png");
-    LoadModelIndexed("./meshes/Mario.obj");
+    //textures.pushback(Create2DTextureImage("./textures/mario_fire.png");
+    //LoadModelIndexed("./meshes/Mario.obj");
+    indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Mario.obj"));
+    indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Mario.obj"));
     CreateGraphicsPipeline("./shaders/simplePhong.vert.spv", "./shaders/simplePhong.frag.spv");
     uniformBufferMap[BufferType::CameraUBO] = CreateUniformBuffers<CameraUBO>();
     uniformBufferMap[BufferType::LightUBO] = CreateUniformBuffers<LightUBO>();
     CreateDescriptorSets();
     CreateCommandBuffers();
+    //RecordCommandBuffers();
     createSyncObjects();
     return true;
 }
@@ -76,6 +80,8 @@ void VulkanRenderer::RecreateSwapChain() {
     CreateDescriptorPool();
     CreateDescriptorSets();
     CreateCommandBuffers();
+    //RecordCommandBuffers();
+
    
 
 }
@@ -92,11 +98,13 @@ void VulkanRenderer::OnDestroy() {
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
-    vkDestroyBuffer(device, indexedVertexBuffer.vertBufferID, nullptr);
-    vkFreeMemory(device, indexedVertexBuffer.vertBufferMemoryID, nullptr);
+    for (int i = 0; i < indexedVertexBufferCollection.size(); i++) {
+        vkDestroyBuffer(device, indexedVertexBufferCollection[i].vertBufferID, nullptr);
+        vkFreeMemory(device, indexedVertexBufferCollection[i].vertBufferMemoryID, nullptr);
 
-    vkDestroyBuffer(device, indexedVertexBuffer.indexBufferID, nullptr);
-    vkFreeMemory(device, indexedVertexBuffer.indexBufferMemoryID, nullptr);
+        vkDestroyBuffer(device, indexedVertexBufferCollection[i].indexBufferID, nullptr);
+        vkFreeMemory(device, indexedVertexBufferCollection[i].indexBufferMemoryID, nullptr);
+    }
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -105,6 +113,7 @@ void VulkanRenderer::OnDestroy() {
     }
 
     vkDestroyCommandPool(device, commandPool, nullptr);
+
     vkDestroyDevice(device, nullptr);
 
     if (enableValidationLayers) {
@@ -127,7 +136,7 @@ void VulkanRenderer::Render() {
     }
 
     UpdateUniformBuffer(imageIndex);
-
+    RecordCommandBuffers();
     if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }
@@ -380,14 +389,17 @@ void VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fr
     VkPushConstantRange pushConstant{};
     pushConstant.offset = 0;
     pushConstant.size = sizeof(PushConstant);
-    pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.pNext = NULL;
+    pipelineLayoutInfo.flags = 0;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -420,7 +432,8 @@ void VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fr
 
 
 void VulkanRenderer::Create2DTextureImage(const char* texureFile) {
-    
+    //return a Sampler2D instead
+    Sampler2D sampler2D;
     SDL_Surface* image = IMG_Load(texureFile);
     VkDeviceSize imageSize = image->w * image->h * 4; /// RGBA only please
 
@@ -447,13 +460,16 @@ void VulkanRenderer::Create2DTextureImage(const char* texureFile) {
     SDL_FreeSurface(image);
 
     createTextureImageView();
-    createTextureSampler();
+    createTextureSampler();    
+ /*   createTextureImageView(texture2D);
+    createTextureSampler(texture2D);*/
 }
 
 
 
-void VulkanRenderer::LoadModelIndexed(const char* filename) {
-   
+IndexedVertexBuffer VulkanRenderer::LoadModelIndexed(const char* filename) {
+    IndexedVertexBuffer indexedVertexBuffer;
+
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
@@ -500,6 +516,7 @@ void VulkanRenderer::LoadModelIndexed(const char* filename) {
     }
     CreateVertexBuffer(indexedVertexBuffer,vertices);
     CreateIndexBuffer(indexedVertexBuffer,indices);
+    return indexedVertexBuffer;
 }
 
 void VulkanRenderer::CreateVertexBuffer(IndexedVertexBuffer &indexedBufferMemory, const std::vector<Vertex> &vertices) {
@@ -695,6 +712,7 @@ void VulkanRenderer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDevice
 
 
 void VulkanRenderer::CreateCommandBuffers() {
+   
     commandBuffers.resize(swapChainFramebuffers.size());
 
     VkCommandBufferAllocateInfo allocInfo{};
@@ -706,7 +724,12 @@ void VulkanRenderer::CreateCommandBuffers() {
     if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
+}
 
+void VulkanRenderer::RecordCommandBuffers()
+{
+    //not the best way to add synchornization but it will work for now, should probably use semaphores
+    vkDeviceWaitIdle(device);
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -714,6 +737,7 @@ void VulkanRenderer::CreateCommandBuffers() {
         if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
             throw std::runtime_error("failed to begin recording command buffer!");
         }
+
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -730,31 +754,72 @@ void VulkanRenderer::CreateCommandBuffers() {
         renderPassInfo.pClearValues = clearValues.data();
 
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+        for (size_t j = 0; j < indexedVertexBufferCollection.size(); j++) {
+            // Bind vertex buffer and index buffer for the current model
+            VkBuffer vertexBuffers[] = { indexedVertexBufferCollection[j].vertBufferID };
+            VkDeviceSize offsets[] = { 0 };
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(commandBuffers[i], indexedVertexBufferCollection[j].indexBufferID, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[j], 0, nullptr);
 
-        VkBuffer vertexBuffers[] = { indexedVertexBuffer.vertBufferID };
-        VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffers[i], indexedVertexBuffer.indexBufferID, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
-        vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indexedVertexBuffer.indexBufferLength), 1, 0, 0, 0);
-        vkCmdEndRenderPass(commandBuffers[i]);
+            // Push the model's transformation matrix
+            vkCmdPushConstants(commandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstant), &pushConstants[j]);
 
-        if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to record command buffer!");
+            // Draw the indexed geometry for the current model
+            vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indexedVertexBufferCollection[j].indexBufferLength), 1, 0, 0, 0);
         }
+            vkCmdEndRenderPass(commandBuffers[i]);
+
+            if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to record command buffer!");
+            }
     }
 }
 
 
 
-void VulkanRenderer::SetCameraUBO(const Matrix4& projection, const Matrix4& view, const Matrix4& model) {
+
+void VulkanRenderer::SetCameraUBO(const Matrix4& projection, const Matrix4& view) {
     cameraUBO.projectionMatrix = projection;
     cameraUBO.viewMatrix = view;
-    cameraUBO.modelMatrix = model;
     cameraUBO.projectionMatrix[5] *= -1.0f; // this flips the 6th vector to make it right handed (y = up)
     //cameraUBO.lightPos = Vec4(0.0f,0.0f,-10.0f,0.0f);
+}
+
+void VulkanRenderer::SetPushConstant(const Matrix4& model, size_t index)
+{
+    PushConstant modelMatricies;
+    modelMatricies.modelMatrix = model;
+
+    //Matrix4 normalMatrix = Matrix4(MMath::transpose(MMath::inverse(model)));
+    //modelMatricies.normalMatrix = normalMatrix;
+
+
+    // Extract the uniform scale factor from the first column of the model matrix
+    float uniformScale = sqrt(model[0] * model[0] +
+        model[4] * model[4] +
+        model[8] * model[8]);
+
+    Matrix4 normalMatrix = Matrix4(model); 
+
+    // Scale the normal matrix by the uniform scale
+    normalMatrix[0] /= uniformScale;
+    normalMatrix[1] /= uniformScale;
+    normalMatrix[2] /= uniformScale;
+
+    //make normalmatrix vec4[3] and assignm values for allignment issues
+    //modelMatricies.normalMatrix[0].x = normalMatrix[0]; // etc (correct alignment)
+
+    modelMatricies.normalMatrix = normalMatrix; 
+    if (index < pushConstants.size()) {
+        // Replace the existing push constant at the given index
+        pushConstants[index] = modelMatricies;
+    }
+    else {
+        // Add a new push constant if the index is out of bounds
+        pushConstants.push_back(modelMatricies);
+    }
 }
 
 void VulkanRenderer::SetLightUBO(Vec4 lightPos_, Vec4 specular_, Vec4 diffuse_, float ambient_, size_t index) {
@@ -990,6 +1055,7 @@ void VulkanRenderer::createCommandPool() {
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {

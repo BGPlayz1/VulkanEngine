@@ -16,7 +16,7 @@ layout (location = 0) out vec4 fragColor;
 layout(binding = 2) uniform sampler2D texSampler;
 
 void main() { 
-    fragColor = vec4(0.0);  // Initialize fragColor to black (0,0,0,0)
+//    fragColor = vec4(0.0);  // Initialize fragColor to black (0,0,0,0)
 //	vec4 ks = vec4(0.2, 0.2, 0.6, 0.0);
 //	vec4 kd = vec4(0.2, 0.2, 0.6, 0.0); 
 //	vec4 ka = 0.1 * kd;
@@ -27,6 +27,7 @@ vec4 kt;
 // You can use the lightDiffuse, lightSpecular, and lightAmbient here
 	ka = lightAmbient;    // Ambient lighting coefficient
 	kt = texture(texSampler,fragTexCoords); 
+ fragColor = ka;
  for (int i = 0; i < MAX_LIGHTS; i++){
 	ks[i] = lightSpecular[i];  // Specular lighting coefficient
 	kd[i] = lightDiffuse[i];    // Diffuse lighting coefficient
@@ -43,7 +44,6 @@ vec4 kt;
 	
     fragColor += (diff * kt * (kd[i])) + (spec * ks[i]); 
     }
- fragColor += ka;
 
 } 
 

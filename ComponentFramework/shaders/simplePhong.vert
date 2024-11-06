@@ -19,6 +19,12 @@ layout(std140,binding = 1) uniform LightBufferObject {
     vec4 ambient;
 } lbo;
 
+layout(push_constant) uniform Push{
+mat4 modelMatrix;
+mat4 normalMatrix;
+//mat3x4 normalMatrix;
+} push;
+
 layout (location = 0) out vec3 vertNormal;
 layout (location = 1) out vec3 lightDir[MAX_LIGHTS];
 layout (location = 4) out vec3 eyeDir;
@@ -32,12 +38,14 @@ layout (location = 12) out vec4 lightAmbient; // New output for ambient
 void main() {
 	fragTexCoords = texCoords;
 	/// We must fix this, just load the normalMatrix in to the UBO
-	mat3 normalMatrix = mat3(transpose(inverse(ubo.modelMatrix)));
-
+//	mat3 normalMatrix = mat3(transpose(inverse(ubo.modelMatrix)));
+	mat3 normalMatrix = mat3(push.normalMatrix);
 	vertNormal = normalize(normalMatrix * vNormal.xyz); /// Rotate the normal to the correct orientation 
-	vec3 vertPos = vec3(ubo.viewMatrix * ubo.modelMatrix * vVertex); /// This is the position of the vertex from the origin
+	vec3 vertPos = vec3(ubo.viewMatrix * push.modelMatrix * vVertex); /// This is the position of the vertex from the origin
 	vec3 vertDir = normalize(vertPos);
 	eyeDir = -vertDir;
+
+	//multiple lights
 	 for (int i = 0; i < 3; i++){
 
 	lightDir[i] = normalize(vec3(lbo.lightPos[i]) - vertPos); /// Create the light direction.
@@ -48,5 +56,5 @@ void main() {
 
 	// Pass the light properties to the fragment shader
 	
-	gl_Position =  ubo.projectionMatrix * ubo.viewMatrix * ubo.modelMatrix * vVertex; 
+	gl_Position =  ubo.projectionMatrix * ubo.viewMatrix * push.modelMatrix * vVertex; 
 }

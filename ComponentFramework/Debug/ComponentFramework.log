@@ -1,10 +1,22 @@
-﻿  VulkanRenderer.cpp
+﻿  Scene0.cpp
+  This is wrong: Vec4 cross(const Vec4& a, const Vec4& b)
+  This questionable: Vec4 inverse(const Vec4& v)
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\Scene0.cpp(74,122): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\Scene0.cpp(75,123): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\Scene0.cpp(76,122): warning C4305: 'argument': truncation from 'double' to 'float'
+  SceneManager.cpp
+  This is wrong: Vec4 cross(const Vec4& a, const Vec4& b)
+  This questionable: Vec4 inverse(const Vec4& v)
+  VulkanRenderer.cpp
   This is wrong: Vec4 cross(const Vec4& a, const Vec4& b)
   This questionable: Vec4 inverse(const Vec4& v)
 C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\tiny_obj_loader.h(1665,27): warning C4018: '<': signed/unsigned mismatch
-C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(518,35): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
-C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(541,34): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
-C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(782,76): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(101,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(436,15): warning C4101: 'sampler2D': unreferenced local variable
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(535,35): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(558,34): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(847,76): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
+  Generating Code...
   ComponentFramework.vcxproj -> C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\Debug\ComponentFramework.exe
   'pwsh.exe' is not recognized as an internal or external command,
   operable program or batch file.

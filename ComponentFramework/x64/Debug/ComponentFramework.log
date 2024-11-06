@@ -1,0 +1,16 @@
+﻿  Camera.cpp
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\Assignemnt1and2BrettGarcia(you can read it easily i promise)\ComponentFramework24.0.4 Vulkan\ComponentFramework\Camera.h(2,10): fatal  error C1083: Cannot open include file: 'Matrix.h': No such file or directory
+  Debug.cpp
+  OpenGLRenderer.cpp
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\Assignemnt1and2BrettGarcia(you can read it easily i promise)\ComponentFramework24.0.4 Vulkan\ComponentFramework\Renderer.h(3,10): fatal  error C1083: Cannot open include file: 'SDL.h': No such file or directory
+  SceneManager.cpp
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\Assignemnt1and2BrettGarcia(you can read it easily i promise)\ComponentFramework24.0.4 Vulkan\ComponentFramework\SceneManager.cpp(1,10): fatal  error C1083: Cannot open include file: 'SDL.h': No such file or directory
+  Main.cpp
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\Assignemnt1and2BrettGarcia(you can read it easily i promise)\ComponentFramework24.0.4 Vulkan\ComponentFramework\Renderer.h(3,10): fatal  error C1083: Cannot open include file: 'SDL.h': No such file or directory
+  Scene0.cpp
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\Assignemnt1and2BrettGarcia(you can read it easily i promise)\ComponentFramework24.0.4 Vulkan\ComponentFramework\Scene0.cpp(1,10): fatal  error C1083: Cannot open include file: 'glew.h': No such file or directory
+  Timer.cpp
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\Assignemnt1and2BrettGarcia(you can read it easily i promise)\ComponentFramework24.0.4 Vulkan\ComponentFramework\Timer.cpp(1,10): fatal  error C1083: Cannot open include file: 'SDL.h': No such file or directory
+  VulkanRenderer.cpp
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\Assignemnt1and2BrettGarcia(you can read it easily i promise)\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.h(4,10): fatal  error C1083: Cannot open include file: 'SDL.h': No such file or directory
+  Generating Code...

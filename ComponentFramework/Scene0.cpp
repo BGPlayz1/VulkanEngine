@@ -57,6 +57,8 @@ void Scene0::Update(const float deltaTime) {
 	static float elapsedTime = 0.0f;
 	elapsedTime += deltaTime;
 	mariosModelMatrix = MMath::rotate(elapsedTime * 90.0f, Vec3(0.0f, 1.0f, 0.0f));
+	mariosModelMatrix2 = MMath::translate(Vec3(2.0f, 0.0f, 0.0f));
+	mariosModelMatrix2 *= MMath::rotate(elapsedTime * 90.0f, Vec3(0.0f, -1.0f, 0.0f));
 }
 
 void Scene0::Render() const {
@@ -66,8 +68,10 @@ void Scene0::Render() const {
 	case RendererType::VULKAN:
 		VulkanRenderer* vRenderer;
 		vRenderer = dynamic_cast<VulkanRenderer*>(renderer);
-		vRenderer->SetCameraUBO(camera->GetProjectionMatrix(), camera->GetViewMatrix(), mariosModelMatrix);
-		vRenderer->SetLightUBO(Vec4(20.0f, 0.0f, 1.0f, 0.0f), Vec4(0.9, 0.0, 0.0, 0.0), Vec4(0.9, 0.0, 0.0, 0.0), float(0.1), 0);
+		vRenderer->SetCameraUBO(camera->GetProjectionMatrix(), camera->GetViewMatrix());
+		vRenderer->SetPushConstant(mariosModelMatrix, 0);
+		vRenderer->SetPushConstant(mariosModelMatrix2, 1);
+		vRenderer->SetLightUBO(Vec4(20.0f, 0.0f, 1.0f, 0.0f), Vec4(0.9, 0.0, 0.0, 0.0), Vec4(0.9, 0.0, 0.0, 0.0), float(0.1), 0); // creates multiple lights, values used in simplePhong.vert/frag
 		vRenderer->SetLightUBO(Vec4(-20.0f, 0.0f, 1.0f, 0.0f), Vec4(0.0, 0.9, 0.0, 0.0), Vec4(0.0, 0.9, 0.0, 0.0), float(0.1), 1);
 		vRenderer->SetLightUBO(Vec4(0.0f, 20.0f, 1.0f, 0.0f), Vec4(0.0, 0.0, 0.9, 0.0), Vec4(0.0, 0.0, 0.9, 0.0), float(0.1), 2);
 		vRenderer->Render();

@@ -139,14 +139,14 @@ struct IndexedVertexBuffer {
 struct CameraUBO { /// A UniformBufferObject
     Matrix4 projectionMatrix;
     Matrix4 viewMatrix;
-    Matrix4 modelMatrix;
-
-   
 };
 
 struct PushConstant {
     Matrix4 modelMatrix; 
-    Matrix4 pushConstant;
+    Matrix4 normalMatrix;
+    //Vec4 normalMatrix[3];
+    //uint32_t textureIndex;
+    //116 bytes, within 128 limit.
 };
 
 static const int numLights = 3;
@@ -183,11 +183,12 @@ public: /// Member functions
     void Render();
     
 
-    void SetCameraUBO(const Matrix4& projection, const Matrix4& view, const Matrix4& model);
+    void SetCameraUBO(const Matrix4& projection, const Matrix4& view);
+    void SetPushConstant(const Matrix4& model, size_t index);
     void SetLightUBO(Vec4 lightPos_, Vec4 specular_, Vec4 diffuse_, float ambient_, size_t index);
     void Create2DTextureImage(const char* texureFile);
     void CreateGraphicsPipeline(const char* vertFile, const char* fragFile);
-    void LoadModelIndexed(const char* filename);
+    IndexedVertexBuffer LoadModelIndexed(const char* filename);
     void RecreateSwapChain();
 
 private: /// Private member variables
@@ -236,7 +237,10 @@ private: /// Private member variables
     CameraUBO cameraUBO;
     static const int numLights = 3;
     LightUBO lightUBO;
-    IndexedVertexBuffer indexedVertexBuffer;
+    std::vector<PushConstant> pushConstants;// create vetor
+    std::vector<IndexedVertexBuffer> indexedVertexBufferCollection;
+    std::vector<Sampler2D> textures;
+   //IndexedVertexBuffer indexedVertexBufferCollection;
     //std::vector<BufferMemory> uniformBuffers;
     //BufferMemory uniformBufferData;
     std::unordered_map<BufferType, std::vector<BufferMemory>> uniformBufferMap;  
@@ -283,6 +287,7 @@ private: /// Member functions
     void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void CreateCommandBuffers();
+    void RecordCommandBuffers();
     void createSyncObjects();
     void CleanupSwapChain();
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
