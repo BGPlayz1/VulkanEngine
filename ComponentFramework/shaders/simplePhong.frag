@@ -1,6 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 const int MAX_LIGHTS = 3;
+const int MAX_TEXTURES = 4;
 
 layout (location = 0) in vec3 vertNormal;
 layout (location = 1) in vec3 lightDir[MAX_LIGHTS];
@@ -9,11 +10,13 @@ layout (location = 5) in vec2 fragTexCoords;
 layout (location = 6) in vec4 lightDiffuse[MAX_LIGHTS]; // Input for diffuse
 layout (location = 9) in vec4 lightSpecular[MAX_LIGHTS]; // Input for specular
 layout (location = 12) in vec4 lightAmbient; // Input for ambient
+layout (location = 13) flat in uint fragTextureIndex; // Input for texture index
+
 
 layout (location = 0) out vec4 fragColor;
 
 
-layout(binding = 2) uniform sampler2D texSampler;
+layout(binding = 2) uniform sampler2D texSamplers[MAX_TEXTURES];
 
 void main() { 
 //    fragColor = vec4(0.0);  // Initialize fragColor to black (0,0,0,0)
@@ -26,8 +29,8 @@ vec4 ka;
 vec4 kt;
 // You can use the lightDiffuse, lightSpecular, and lightAmbient here
 	ka = lightAmbient;    // Ambient lighting coefficient
-	kt = texture(texSampler,fragTexCoords); 
- fragColor = ka;
+	kt = texture(texSamplers[fragTextureIndex], fragTexCoords); 
+	fragColor = ka;
  for (int i = 0; i < MAX_LIGHTS; i++){
 	ks[i] = lightSpecular[i];  // Specular lighting coefficient
 	kd[i] = lightDiffuse[i];    // Diffuse lighting coefficient

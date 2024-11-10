@@ -143,9 +143,9 @@ struct CameraUBO { /// A UniformBufferObject
 
 struct PushConstant {
     Matrix4 modelMatrix; 
-    Matrix4 normalMatrix;
-    //Vec4 normalMatrix[3];
-    //uint32_t textureIndex;
+    //Matrix4 normalMatrix;
+    Vec4 normalMatrix[3];
+    uint32_t textureIndex;
     //116 bytes, within 128 limit.
 };
 
@@ -186,7 +186,7 @@ public: /// Member functions
     void SetCameraUBO(const Matrix4& projection, const Matrix4& view);
     void SetPushConstant(const Matrix4& model, size_t index);
     void SetLightUBO(Vec4 lightPos_, Vec4 specular_, Vec4 diffuse_, float ambient_, size_t index);
-    void Create2DTextureImage(const char* texureFile);
+    Sampler2D Create2DTextureImage(const char* texureFile);
     void CreateGraphicsPipeline(const char* vertFile, const char* fragFile);
     IndexedVertexBuffer LoadModelIndexed(const char* filename);
     void RecreateSwapChain();
@@ -233,7 +233,7 @@ private: /// Private member variables
    
     VkQueue graphicsQueue;
     VkQueue presentQueue;
-    Sampler2D texture2D;
+    //Sampler2D texture2D;
     CameraUBO cameraUBO;
     static const int numLights = 3;
     LightUBO lightUBO;
@@ -267,8 +267,8 @@ private: /// Member functions
     void createCommandPool();
     void createDepthResources();
    
-    void createTextureImageView();
-    void createTextureSampler();
+    void createTextureImageView(Sampler2D& texture2D);
+    void createTextureSampler(Sampler2D& texture2D);
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
         VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
    

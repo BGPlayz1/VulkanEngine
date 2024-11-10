@@ -21,8 +21,10 @@ layout(std140,binding = 1) uniform LightBufferObject {
 
 layout(push_constant) uniform Push{
 mat4 modelMatrix;
-mat4 normalMatrix;
-//mat3x4 normalMatrix;
+//mat4 normalMatrix;
+mat3x4 normalMatrix;
+uint textureIndex;
+
 } push;
 
 layout (location = 0) out vec3 vertNormal;
@@ -32,10 +34,12 @@ layout (location = 5) out vec2 fragTexCoords;
 layout (location = 6) out vec4 lightDiffuse[MAX_LIGHTS]; // New output for diffuse
 layout (location = 9) out vec4 lightSpecular[MAX_LIGHTS]; // New output for specular
 layout (location = 12) out vec4 lightAmbient; // New output for ambient
+layout (location = 13) out flat uint fragTextureIndex;
 
 
 
 void main() {
+	fragTextureIndex = push.textureIndex;
 	fragTexCoords = texCoords;
 	/// We must fix this, just load the normalMatrix in to the UBO
 //	mat3 normalMatrix = mat3(transpose(inverse(ubo.modelMatrix)));

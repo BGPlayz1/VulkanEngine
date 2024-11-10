@@ -43,9 +43,13 @@ bool VulkanRenderer::OnCreate(){
 
     createDepthResources();
     createFramebuffers();
-    Create2DTextureImage("./textures/mario_fire.png");
-    //textures.pushback(Create2DTextureImage("./textures/mario_fire.png");
+    //Create2DTextureImage("./textures/mario_fire.png");
+    textures.push_back(Create2DTextureImage("./textures/mario_fire.png"));
+    textures.push_back(Create2DTextureImage("./textures/mario_mime.png"));
+    textures.push_back(Create2DTextureImage("./textures/mario_fire.png"));
+    textures.push_back(Create2DTextureImage("./textures/mario_fire.png"));
     //LoadModelIndexed("./meshes/Mario.obj");
+    indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Mario.obj"));
     indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Mario.obj"));
     indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Mario.obj"));
     CreateGraphicsPipeline("./shaders/simplePhong.vert.spv", "./shaders/simplePhong.frag.spv");
@@ -90,11 +94,20 @@ void VulkanRenderer::OnDestroy() {
     vkDeviceWaitIdle(device); /// Wait for all commands to clear
     CleanupSwapChain();
 
-    vkDestroySampler(device, texture2D.sampler, nullptr);
+ /*   vkDestroySampler(device, texture2D.sampler, nullptr);
     vkDestroyImageView(device, texture2D.imageView, nullptr);
 
     vkDestroyImage(device, texture2D.image, nullptr);
-    vkFreeMemory(device, texture2D.imageDeviceMemory, nullptr);
+    vkFreeMemory(device, texture2D.imageDeviceMemory, nullptr);*/
+
+    for (const auto& texture : textures) {
+        vkDestroySampler(device, texture.sampler, nullptr);
+        vkDestroyImageView(device, texture.imageView, nullptr);
+        vkDestroyImage(device, texture.image, nullptr);
+        vkFreeMemory(device, texture.imageDeviceMemory, nullptr);
+    }
+    //textures.clear();
+
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
@@ -275,7 +288,7 @@ void VulkanRenderer::CreateDescriptorSetLayout() {
 
     VkDescriptorSetLayoutBinding samplerLayoutBinding{};
     samplerLayoutBinding.binding = 2;
-    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorCount = 4;
     samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -431,9 +444,9 @@ void VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fr
 
 
 
-void VulkanRenderer::Create2DTextureImage(const char* texureFile) {
+Sampler2D VulkanRenderer::Create2DTextureImage(const char* texureFile) {
     //return a Sampler2D instead
-    Sampler2D sampler2D;
+    Sampler2D texture2D;
     SDL_Surface* image = IMG_Load(texureFile);
     VkDeviceSize imageSize = image->w * image->h * 4; /// RGBA only please
 
@@ -459,10 +472,12 @@ void VulkanRenderer::Create2DTextureImage(const char* texureFile) {
     vkFreeMemory(device, stagingBuffer.bufferMemoryID, nullptr);
     SDL_FreeSurface(image);
 
-    createTextureImageView();
-    createTextureSampler();    
- /*   createTextureImageView(texture2D);
-    createTextureSampler(texture2D);*/
+    //createTextureImageView();
+    //createTextureSampler();    
+    createTextureImageView(texture2D);
+    createTextureSampler(texture2D);
+
+    return texture2D;
 }
 
 
@@ -621,27 +636,22 @@ void VulkanRenderer::CreateDescriptorSets() {
     for (size_t i = 0; i < swapChainImages.size(); i++) {
         VkDescriptorBufferInfo cameraBufferInfo{};
         VkDescriptorBufferInfo lightBufferInfo{};
-       
-            cameraBufferInfo.buffer = uniformBufferMap[BufferType::CameraUBO][i].bufferID;
-            cameraBufferInfo.range = uniformBufferMap[BufferType::CameraUBO][i].bufferMemoryLength;
-            cameraBufferInfo.offset = 0;
 
-            lightBufferInfo.buffer = uniformBufferMap[BufferType::LightUBO][i].bufferID;
-            lightBufferInfo.range = uniformBufferMap[BufferType::LightUBO][i].bufferMemoryLength;
-            lightBufferInfo.offset = 0;
+        cameraBufferInfo.buffer = uniformBufferMap[BufferType::CameraUBO][i].bufferID;
+        cameraBufferInfo.range = uniformBufferMap[BufferType::CameraUBO][i].bufferMemoryLength;
+        cameraBufferInfo.offset = 0;
 
-     /*   for (size_t i = 0; i < 2; i++)
-        {
-            for (const auto& UBOName : uniformBufferMap) {
-                bufferInfo.range = uniformBufferMap[UBOName.first][i].bufferMemoryLength;
-            }
-        }*/
-        //bufferInfo.range = sizeof(CameraUBO);
+        lightBufferInfo.buffer = uniformBufferMap[BufferType::LightUBO][i].bufferID;
+        lightBufferInfo.range = uniformBufferMap[BufferType::LightUBO][i].bufferMemoryLength;
+        lightBufferInfo.offset = 0;
 
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = texture2D.imageView;
-        imageInfo.sampler = texture2D.sampler;
+        // Create a VkDescriptorImageInfo array to handle all textures
+        std::vector<VkDescriptorImageInfo> imageInfos(textures.size());
+        for (size_t j = 0; j < textures.size(); ++j) {
+            imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfos[j].imageView = textures[j].imageView;
+            imageInfos[j].sampler = textures[j].sampler;
+        }
 
         std::array<VkWriteDescriptorSet, TOTAL_NUMBER_OF_DESCRIPTORS> descriptorWrites{};
 
@@ -663,15 +673,16 @@ void VulkanRenderer::CreateDescriptorSets() {
 
         descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[2].dstSet = descriptorSets[i];
-        descriptorWrites[2].dstBinding = 2;
+        descriptorWrites[2].dstBinding = 2; // Adjust binding if necessary
         descriptorWrites[2].dstArrayElement = 0;
         descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[2].descriptorCount = 1;
-        descriptorWrites[2].pImageInfo = &imageInfo;
+        descriptorWrites[2].descriptorCount = static_cast<uint32_t>(imageInfos.size());
+        descriptorWrites[2].pImageInfo = imageInfos.data(); // Provide array of images
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
+
 
 void VulkanRenderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
     VkBufferCreateInfo bufferInfo{};
@@ -809,9 +820,20 @@ void VulkanRenderer::SetPushConstant(const Matrix4& model, size_t index)
     normalMatrix[2] /= uniformScale;
 
     //make normalmatrix vec4[3] and assignm values for allignment issues
-    //modelMatricies.normalMatrix[0].x = normalMatrix[0]; // etc (correct alignment)
+    modelMatricies.normalMatrix[0].x = normalMatrix[0];
+    modelMatricies.normalMatrix[1].x = normalMatrix[1];
+    modelMatricies.normalMatrix[2].x = normalMatrix[2];
 
-    modelMatricies.normalMatrix = normalMatrix; 
+    modelMatricies.normalMatrix[0].y = normalMatrix[3];
+    modelMatricies.normalMatrix[1].y = normalMatrix[4];
+    modelMatricies.normalMatrix[2].y = normalMatrix[5];
+
+    modelMatricies.normalMatrix[0].z = normalMatrix[6];
+    modelMatricies.normalMatrix[1].z = normalMatrix[7];
+    modelMatricies.normalMatrix[2].z = normalMatrix[8];
+    modelMatricies.textureIndex = index;
+
+    //modelMatricies.normalMatrix = normalMatrix; 
     if (index < pushConstants.size()) {
         // Replace the existing push constant at the given index
         pushConstants[index] = modelMatricies;
@@ -1142,11 +1164,14 @@ void VulkanRenderer::createSyncObjects() {
     }
 }
 
-void VulkanRenderer::createTextureImageView() {
+void VulkanRenderer::createTextureImageView(Sampler2D& texture2D) {
     texture2D.imageView = createImageView(texture2D.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+    if (texture2D.imageView == VK_NULL_HANDLE) {
+        throw std::runtime_error("Image view was not created correctly!");
+    }
 }
 
-void VulkanRenderer::createTextureSampler() {
+void VulkanRenderer::createTextureSampler(Sampler2D& texture2D) {
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
