@@ -52,7 +52,7 @@ bool VulkanRenderer::OnCreate(){
     indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Mario.obj"));
     indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Mario.obj"));
     indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Mario.obj"));
-    CreateGraphicsPipeline("./shaders/simplePhong.vert.spv", "./shaders/simplePhong.frag.spv");
+    graphicsPipeline = CreateGraphicsPipeline("./shaders/simplePhong.vert.spv", "./shaders/simplePhong.frag.spv", "./shaders/tessTexturePhong.tesc.spv", "./shaders/tessTexturePhong.tese.spv");
     uniformBufferMap[BufferType::CameraUBO] = CreateUniformBuffers<CameraUBO>();
     uniformBufferMap[BufferType::LightUBO] = CreateUniformBuffers<LightUBO>();
     CreateDescriptorSets();
@@ -76,7 +76,7 @@ void VulkanRenderer::RecreateSwapChain() {
     createSwapChain();
     createImageViews();
     createRenderPass();
-    CreateGraphicsPipeline("shaders/simplePhong.vert.spv","shaders/simplePhong.frag.spv");
+    graphicsPipeline = CreateGraphicsPipeline("./shaders/simplePhong.vert.spv", "./shaders/simplePhong.frag.spv", "./shaders/tessTexturePhong.tesc.spv", "./shaders/tessTexturePhong.tese.spv");
     createDepthResources();
     createFramebuffers();
     uniformBufferMap[BufferType::CameraUBO] = CreateUniformBuffers<CameraUBO>();
@@ -128,6 +128,7 @@ void VulkanRenderer::OnDestroy() {
     vkDestroyCommandPool(device, commandPool, nullptr);
 
     vkDestroyDevice(device, nullptr);
+
 
     if (enableValidationLayers) {
         destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
@@ -305,12 +306,39 @@ void VulkanRenderer::CreateDescriptorSetLayout() {
     }
 }
 
-void VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fragFile) {
+//return a VkPipeline 
+VkPipeline VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fragFile, const char* tessCtrlFile, const char* tessEvalFile) {
+
+ /*   std::vector<char> vertShaderCode;
+    std::vector<char> fragShaderCode;*/
+
+    VkPipeline graphicsPipeline;
+
     auto vertShaderCode = readFile(vertFile);
     auto fragShaderCode = readFile(fragFile);
 
-    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+
+    VkShaderModule vertShaderModule = VK_NULL_HANDLE;
+    VkShaderModule fragShaderModule = VK_NULL_HANDLE;
+
+    if (vertFile != nullptr && fragFile != nullptr) {
+        vertShaderCode = readFile(vertFile);
+        fragShaderCode = readFile(fragFile);
+        vertShaderModule = createShaderModule(vertShaderCode);
+        fragShaderModule = createShaderModule(fragShaderCode);
+    }
+
+    auto tessCtrlCode = readFile(tessCtrlFile);
+    auto tessEvalCode = readFile(tessEvalFile);
+    VkShaderModule tessCtrlModule = VK_NULL_HANDLE;
+    VkShaderModule tessEvalModule = VK_NULL_HANDLE;
+
+    if (tessCtrlFile != nullptr && tessEvalFile != nullptr) {
+        tessCtrlCode = readFile(tessCtrlFile);
+        tessEvalCode = readFile(tessEvalFile);
+        tessCtrlModule = createShaderModule(tessCtrlCode);
+        tessEvalModule = createShaderModule(tessEvalCode);
+    }
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -318,13 +346,27 @@ void VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fr
     vertShaderStageInfo.module = vertShaderModule;
     vertShaderStageInfo.pName = "main";
 
+
+
     VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
     fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     fragShaderStageInfo.module = fragShaderModule;
     fragShaderStageInfo.pName = "main";
 
-    VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+    VkPipelineShaderStageCreateInfo tessCtrlStageInfo{};
+    tessCtrlStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    tessCtrlStageInfo.stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+    tessCtrlStageInfo.module = tessCtrlModule;
+    tessCtrlStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo tessEvalStageInfo{};
+    tessEvalStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    tessEvalStageInfo.stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+    tessEvalStageInfo.module = tessEvalModule;
+    tessEvalStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo, tessCtrlStageInfo, tessEvalStageInfo };
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -341,6 +383,7 @@ void VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fr
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
+
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -404,6 +447,10 @@ void VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fr
     pushConstant.size = sizeof(PushConstant);
     pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
+    VkPipelineTessellationStateCreateInfo tessellationState{};
+    tessellationState.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+    tessellationState.patchControlPoints = 3;  // Example: number of control points per patch
+
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -432,14 +479,29 @@ void VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fr
     pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
+    pipelineInfo.pTessellationState = &tessellationState;  // Add tessellation state to the pipeline
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
 
     if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+    if (fragShaderModule != VK_NULL_HANDLE) {
+       vkDestroyShaderModule(device, fragShaderModule, nullptr);
+    }
+    if (vertShaderModule != VK_NULL_HANDLE) {
+        vkDestroyShaderModule(device, vertShaderModule, nullptr);
+    }
+    if (tessCtrlModule != VK_NULL_HANDLE) {
+        vkDestroyShaderModule(device, tessCtrlModule, nullptr);
+    }
+    if (tessEvalModule != VK_NULL_HANDLE) {
+        vkDestroyShaderModule(device, tessEvalModule, nullptr);
+    }
+    
+
+    return graphicsPipeline;
 }
 
 
@@ -766,6 +828,7 @@ void VulkanRenderer::RecordCommandBuffers()
 
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
         for (size_t j = 0; j < indexedVertexBufferCollection.size(); j++) {
             // Bind vertex buffer and index buffer for the current model
             VkBuffer vertexBuffers[] = { indexedVertexBufferCollection[j].vertBufferID };
@@ -937,6 +1000,8 @@ void VulkanRenderer::createLogicalDevice() {
 
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
+    deviceFeatures.tessellationShader = VK_TRUE;
 
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());

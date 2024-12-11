@@ -111,5 +111,23 @@
     <None Include="shaders\phong.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="shaders\tessTexturePhong.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\tessTexturePhong.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\tessTexturePhong.eval">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\tessTexturePhong.ctrl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\tessTexturePhong.tese">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\tessTexturePhong.tesc">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

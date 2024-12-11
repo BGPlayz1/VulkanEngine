@@ -187,7 +187,7 @@ public: /// Member functions
     void SetPushConstant(const Matrix4& model, size_t index);
     void SetLightUBO(Vec4 lightPos_, Vec4 specular_, Vec4 diffuse_, float ambient_, size_t index);
     Sampler2D Create2DTextureImage(const char* texureFile);
-    void CreateGraphicsPipeline(const char* vertFile, const char* fragFile);
+    VkPipeline CreateGraphicsPipeline(const char* vertFile, const char* fragFile, const char* tessCtrlFile, const char* tessEvalFile);
     IndexedVertexBuffer LoadModelIndexed(const char* filename);
     void RecreateSwapChain();
 
