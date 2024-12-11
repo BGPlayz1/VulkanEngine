@@ -57,10 +57,10 @@ void Scene0::Update(const float deltaTime) {
 	static float elapsedTime = 0.0f;
 	elapsedTime += deltaTime;
 	mariosModelMatrix = MMath::rotate(elapsedTime * 90.0f, Vec3(0.0f, 1.0f, 0.0f));
-	mariosModelMatrix2 = MMath::translate(Vec3(2.0f, 0.0f, 0.0f));
-	mariosModelMatrix2 *= MMath::rotate(elapsedTime * 90.0f, Vec3(0.0f, -1.0f, 0.0f));
-	mariosModelMatrix3 = MMath::translate(Vec3(-2.0f, 0.0f, 0.0f));
-	mariosModelMatrix3 *= MMath::rotate(elapsedTime * 90.0f, Vec3(1.0f, 0.0f, 0.0f));
+	mariosModelMatrix3 = MMath::translate(Vec3(2.0f, 0.0f, 0.0f));
+	mariosModelMatrix3 *= MMath::rotate(elapsedTime * 90.0f, Vec3(0.0f, -1.0f, 0.0f));
+	mariosModelMatrix2 = MMath::translate(Vec3(-2.0f, 0.0f, 0.0f));
+	mariosModelMatrix2 *= MMath::rotate(elapsedTime * 90.0f, Vec3(1.0f, 0.0f, 0.0f));
 }
 
 void Scene0::Render() const {

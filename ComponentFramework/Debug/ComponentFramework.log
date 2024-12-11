@@ -1,11 +1,9 @@
-﻿  VulkanRenderer.cpp
+﻿  Scene0.cpp
   This is wrong: Vec4 cross(const Vec4& a, const Vec4& b)
   This questionable: Vec4 inverse(const Vec4& v)
-C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\tiny_obj_loader.h(1665,27): warning C4018: '<': signed/unsigned mismatch
-C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(114,23): warning C4018: '<': signed/unsigned mismatch
-C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(612,35): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
-C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(635,34): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
-C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\VulkanRenderer.cpp(932,76): warning C4244: 'argument': conversion from 'VkDeviceSize' to 'size_t', possible loss of data
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\Scene0.cpp(77,122): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\Scene0.cpp(78,123): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\ComponentFramework\Scene0.cpp(79,122): warning C4305: 'argument': truncation from 'double' to 'float'
   ComponentFramework.vcxproj -> C:\Users\brett\Downloads\ComponentFramework24.0.4 Vulkan\ComponentFramework24.0.4 Vulkan\Debug\ComponentFramework.exe
   'pwsh.exe' is not recognized as an internal or external command,
   operable program or batch file.
