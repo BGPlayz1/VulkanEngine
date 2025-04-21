@@ -37,25 +37,40 @@ bool VulkanRenderer::OnCreate(){
     createImageViews();
     createRenderPass();
     CreateDescriptorSetLayout();
+    CreateDescriptorSetLayoutTessilation();
+    //another descriptor set
     
     createCommandPool();
     CreateDescriptorPool();
+    CreateDescriptorPoolTessilation();
+    //do one more
 
     createDepthResources();
     createFramebuffers();
     //Create2DTextureImage("./textures/mario_fire.png");
     textures.push_back(Create2DTextureImage("./textures/mario_fire.png"));
     textures.push_back(Create2DTextureImage("./textures/mario_mime.png"));
+    textures.push_back(Create2DTextureImage("./textures/mario_mime.png"));
     textures.push_back(Create2DTextureImage("./textures/mario_fire.png"));
-    textures.push_back(Create2DTextureImage("./textures/mario_fire.png"));
+
+    texturesTessilation.push_back(Create2DTextureImage("./textures/terrainHeight.png"));
+    texturesTessilation.push_back(Create2DTextureImage("./textures/terrainDiffuse.png"));
+    texturesTessilation.push_back(Create2DTextureImage("./textures/terrainNormal.png"));
     //LoadModelIndexed("./meshes/Mario.obj");
+    indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Tetrahedron.obj"));
     indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Mario.obj"));
     indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Mario.obj"));
     indexedVertexBufferCollection.push_back(LoadModelIndexed("./meshes/Mario.obj"));
-    graphicsPipeline = CreateGraphicsPipeline("./shaders/simplePhong.vert.spv", "./shaders/simplePhong.frag.spv", "./shaders/tessTexturePhong.tesc.spv", "./shaders/tessTexturePhong.tese.spv");
+    indexedVertexBufferCollectionTessilation.push_back(LoadModelIndexed("./meshes/Plane.obj"));
+    CreateGraphicsPipeline("./shaders/simplePhong.vert.spv", "./shaders/simplePhong.frag.spv");
+    CreateGraphicsPipelineTessilation("./shaders/tessTexturePhong.vert.spv", "./shaders/tessTexturePhong.frag.spv", "./shaders/tessTexturePhong.tesc.spv", "./shaders/tessTexturePhong.tese.spv");
+    //another graphicspipeline
     uniformBufferMap[BufferType::CameraUBO] = CreateUniformBuffers<CameraUBO>();
     uniformBufferMap[BufferType::LightUBO] = CreateUniformBuffers<LightUBO>();
+    uniformBufferMap[BufferType::MatrixUBO] = CreateUniformBuffers<MatrixUBO>();
     CreateDescriptorSets();
+    CreateDescriptorSetsTessilation();
+    //another descriptorset
     CreateCommandBuffers();
     //RecordCommandBuffers();
     createSyncObjects();
@@ -76,11 +91,13 @@ void VulkanRenderer::RecreateSwapChain() {
     createSwapChain();
     createImageViews();
     createRenderPass();
-    graphicsPipeline = CreateGraphicsPipeline("./shaders/simplePhong.vert.spv", "./shaders/simplePhong.frag.spv", "./shaders/tessTexturePhong.tesc.spv", "./shaders/tessTexturePhong.tese.spv");
+    CreateGraphicsPipeline("./shaders/simplePhong.vert.spv", "./shaders/simplePhong.frag.spv");
+    CreateGraphicsPipelineTessilation("./shaders/tessTexturePhong.vert.spv", "./shaders/tessTexturePhong.frag.spv", "./shaders/tessTexturePhong.tesc.spv", "./shaders/tessTexturePhong.tese.spv");
     createDepthResources();
     createFramebuffers();
     uniformBufferMap[BufferType::CameraUBO] = CreateUniformBuffers<CameraUBO>();
     uniformBufferMap[BufferType::LightUBO] = CreateUniformBuffers<LightUBO>();
+    uniformBufferMap[BufferType::MatrixUBO] = CreateUniformBuffers<LightUBO>();
     CreateDescriptorPool();
     CreateDescriptorSets();
     CreateCommandBuffers();
@@ -306,13 +323,189 @@ void VulkanRenderer::CreateDescriptorSetLayout() {
     }
 }
 
+void VulkanRenderer::CreateDescriptorSetLayoutTessilation()
+{
+    VkDescriptorSetLayoutBinding matrixLayoutBinding{};
+    matrixLayoutBinding.binding = 0;
+    matrixLayoutBinding.descriptorCount = 1;
+    matrixLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    matrixLayoutBinding.pImmutableSamplers = nullptr;
+    matrixLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+
+    VkDescriptorSetLayoutBinding textureDataBinding{};
+    textureDataBinding.binding = 1;
+    textureDataBinding.descriptorCount = 1;
+    textureDataBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    textureDataBinding.pImmutableSamplers = nullptr;
+    textureDataBinding.stageFlags = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+
+    VkDescriptorSetLayoutBinding surfaceTextureBinding{};
+    surfaceTextureBinding.binding = 2;
+    surfaceTextureBinding.descriptorCount = 1;
+    surfaceTextureBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    surfaceTextureBinding.pImmutableSamplers = nullptr;
+    surfaceTextureBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+
+    VkDescriptorSetLayoutBinding normalTextureBinding{};
+    normalTextureBinding.binding = 3;
+    normalTextureBinding.descriptorCount = 1;
+    normalTextureBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    normalTextureBinding.pImmutableSamplers = nullptr;
+    normalTextureBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+
+    std::array<VkDescriptorSetLayoutBinding, 4> bindings = { matrixLayoutBinding, textureDataBinding, surfaceTextureBinding, normalTextureBinding };
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+    layoutInfo.pBindings = bindings.data();
+
+    if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayoutTessilation) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
+}
+
 //return a VkPipeline 
-VkPipeline VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fragFile, const char* tessCtrlFile, const char* tessEvalFile) {
+void VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const char* fragFile) {
+    auto vertShaderCode = readFile(vertFile);
+    auto fragShaderCode = readFile(fragFile);
 
- /*   std::vector<char> vertShaderCode;
-    std::vector<char> fragShaderCode;*/
+    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
 
-    VkPipeline graphicsPipeline;
+    VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+    vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vertShaderStageInfo.module = vertShaderModule;
+    vertShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+    fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragShaderStageInfo.module = fragShaderModule;
+    fragShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+    auto bindingDescription = Vertex::getBindingDescription();
+    auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(swapChainExtent.width);
+    viewport.height = static_cast<float>(swapChainExtent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    VkRect2D scissor{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = swapChainExtent;
+
+    VkPipelineViewportStateCreateInfo viewportState{};
+    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.viewportCount = 1;
+    viewportState.pViewports = &viewport;
+    viewportState.scissorCount = 1;
+    viewportState.pScissors = &scissor;
+
+    VkPipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.lineWidth = 1.0f;
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizer.depthBiasEnable = VK_FALSE;
+
+    VkPipelineMultisampleStateCreateInfo multisampling{};
+    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    VkPipelineDepthStencilStateCreateInfo depthStencil{};
+    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil.depthTestEnable = VK_TRUE;
+    depthStencil.depthWriteEnable = VK_TRUE;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencil.depthBoundsTestEnable = VK_FALSE;
+    depthStencil.stencilTestEnable = VK_FALSE;
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.blendEnable = VK_FALSE;
+
+    VkPipelineColorBlendStateCreateInfo colorBlending{};
+    colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlending.logicOpEnable = VK_FALSE;
+    colorBlending.logicOp = VK_LOGIC_OP_COPY;
+    colorBlending.attachmentCount = 1;
+    colorBlending.pAttachments = &colorBlendAttachment;
+    colorBlending.blendConstants[0] = 0.0f;
+    colorBlending.blendConstants[1] = 0.0f;
+    colorBlending.blendConstants[2] = 0.0f;
+    colorBlending.blendConstants[3] = 0.0f;
+
+    VkPushConstantRange pushConstant{};
+    pushConstant.offset = 0;
+    pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    pushConstant.size = sizeof(PushConstant);
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
+
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create pipeline layout!");
+    }
+
+    VkGraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount = 2;
+    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pDepthStencilState = &depthStencil;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.layout = pipelineLayout;
+    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.subpass = 0;
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create graphics pipeline!");
+    }
+    vkDestroyShaderModule(device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+}
+
+void VulkanRenderer::CreateGraphicsPipelineTessilation(const char* vertFile, const char* fragFile, const char* tessCtrlFile, const char* tessEvalFile)
+{
+
+    /*   std::vector<char> vertShaderCode;
+       std::vector<char> fragShaderCode;*/
+
 
     auto vertShaderCode = readFile(vertFile);
     auto fragShaderCode = readFile(fragFile);
@@ -381,7 +574,7 @@ VkPipeline VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const ch
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
 
@@ -457,17 +650,17 @@ VkPipeline VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const ch
     pipelineLayoutInfo.pNext = NULL;
     pipelineLayoutInfo.flags = 0;
     pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayoutTessilation;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayoutTessilation) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = 2;
+    pipelineInfo.stageCount = 4;
     pipelineInfo.pStages = shaderStages;
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;
@@ -476,19 +669,19 @@ VkPipeline VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const ch
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.layout = pipelineLayout;
+    pipelineInfo.layout = pipelineLayoutTessilation;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.pTessellationState = &tessellationState;  // Add tessellation state to the pipeline
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipelineTessilation) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
     if (fragShaderModule != VK_NULL_HANDLE) {
-       vkDestroyShaderModule(device, fragShaderModule, nullptr);
+        vkDestroyShaderModule(device, fragShaderModule, nullptr);
     }
     if (vertShaderModule != VK_NULL_HANDLE) {
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -499,9 +692,8 @@ VkPipeline VulkanRenderer::CreateGraphicsPipeline(const char* vertFile, const ch
     if (tessEvalModule != VK_NULL_HANDLE) {
         vkDestroyShaderModule(device, tessEvalModule, nullptr);
     }
-    
 
-    return graphicsPipeline;
+
 }
 
 
@@ -682,6 +874,29 @@ void VulkanRenderer::CreateDescriptorPool() {
     }
 }
 
+void VulkanRenderer::CreateDescriptorPoolTessilation()
+{
+    std::array<VkDescriptorPoolSize, 4> poolSizes{};
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes[2].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    poolSizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes[3].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 3;
+    poolInfo.pPoolSizes = poolSizes.data();
+    poolInfo.maxSets = static_cast<uint32_t>(swapChainImages.size());
+
+    if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPoolTessilation) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor pool!");
+    }
+}
+
 void VulkanRenderer::CreateDescriptorSets() {
     std::vector<VkDescriptorSetLayout> layouts(swapChainImages.size(), descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
@@ -740,6 +955,85 @@ void VulkanRenderer::CreateDescriptorSets() {
         descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         descriptorWrites[2].descriptorCount = static_cast<uint32_t>(imageInfos.size());
         descriptorWrites[2].pImageInfo = imageInfos.data(); // Provide array of images
+
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    }
+}
+
+void VulkanRenderer::CreateDescriptorSetsTessilation()
+{
+    std::vector<VkDescriptorSetLayout> layouts(swapChainImages.size(), descriptorSetLayoutTessilation);
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPoolTessilation;
+    allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
+    allocInfo.pSetLayouts = layouts.data();
+
+    descriptorSetsTessilation.resize(swapChainImages.size());
+    if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSetsTessilation.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate descriptor sets!");
+    }
+
+    for (size_t i = 0; i < swapChainImages.size(); i++) {
+        VkDescriptorBufferInfo matrixBufferInfo{};
+
+        matrixBufferInfo.buffer = uniformBufferMap[BufferType::MatrixUBO][i].bufferID;
+        matrixBufferInfo.range = uniformBufferMap[BufferType::MatrixUBO][i].bufferMemoryLength;
+        matrixBufferInfo.offset = 0;
+
+
+        // Create a VkDescriptorImageInfo array to handle all textures
+        VkDescriptorImageInfo imageInfoTextureData;
+
+        imageInfoTextureData.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfoTextureData.imageView = texturesTessilation[0].imageView;
+        imageInfoTextureData.sampler = texturesTessilation[0].sampler;
+
+        VkDescriptorImageInfo imageInfoSurfaceTexture;
+        imageInfoSurfaceTexture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfoSurfaceTexture.imageView = texturesTessilation[1].imageView;
+        imageInfoSurfaceTexture.sampler = texturesTessilation[1].sampler;
+
+        VkDescriptorImageInfo imageInfoNormalTexture;
+        imageInfoNormalTexture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfoNormalTexture.imageView = texturesTessilation[2].imageView;
+        imageInfoNormalTexture.sampler = texturesTessilation[2].sampler;
+
+
+
+        std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
+
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = descriptorSetsTessilation[i];
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo = &matrixBufferInfo;
+
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = descriptorSetsTessilation[i];
+        descriptorWrites[1].dstBinding = 1; // Adjust binding if necessary
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo = &imageInfoTextureData; // Provide array of images
+
+        descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[2].dstSet = descriptorSetsTessilation[i];
+        descriptorWrites[2].dstBinding = 2; // Adjust binding if necessary
+        descriptorWrites[2].dstArrayElement = 0;
+        descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[2].descriptorCount = 1;
+        descriptorWrites[2].pImageInfo = &imageInfoSurfaceTexture; // Provide array of images
+        
+        descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[3].dstSet = descriptorSetsTessilation[i];
+        descriptorWrites[3].dstBinding = 3; // Adjust binding if necessary
+        descriptorWrites[3].dstArrayElement = 0;
+        descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[3].descriptorCount = 1;
+        descriptorWrites[3].pImageInfo = &imageInfoNormalTexture; // Provide array of images
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
@@ -835,7 +1129,7 @@ void VulkanRenderer::RecordCommandBuffers()
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
             vkCmdBindIndexBuffer(commandBuffers[i], indexedVertexBufferCollection[j].indexBufferID, 0, VK_INDEX_TYPE_UINT32);
-            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[j], 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
 
             // Push the model's transformation matrix
             vkCmdPushConstants(commandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstant), &pushConstants[j]);
@@ -843,6 +1137,13 @@ void VulkanRenderer::RecordCommandBuffers()
             // Draw the indexed geometry for the current model
             vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indexedVertexBufferCollection[j].indexBufferLength), 1, 0, 0, 0);
         }
+        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineTessilation);
+        VkBuffer vertexBuffers[] = { indexedVertexBufferCollectionTessilation[0].vertBufferID};
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutTessilation, 0, 1, &descriptorSetsTessilation[i], 0, nullptr);
+        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(commandBuffers[i], indexedVertexBufferCollectionTessilation[0].indexBufferID, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indexedVertexBufferCollectionTessilation[0].indexBufferLength), 1, 0, 0, 0);
             vkCmdEndRenderPass(commandBuffers[i]);
 
             if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
@@ -860,6 +1161,8 @@ void VulkanRenderer::SetCameraUBO(const Matrix4& projection, const Matrix4& view
     cameraUBO.projectionMatrix[5] *= -1.0f; // this flips the 6th vector to make it right handed (y = up)
     //cameraUBO.lightPos = Vec4(0.0f,0.0f,-10.0f,0.0f);
 }
+
+
 
 void VulkanRenderer::SetPushConstant(const Matrix4& model, size_t index)
 {
@@ -917,6 +1220,13 @@ void VulkanRenderer::SetLightUBO(Vec4 lightPos_, Vec4 specular_, Vec4 diffuse_, 
     lightUBO.diffuse[index] = diffuse_;
     lightUBO.specular[index] = specular_;
     lightUBO.ambient = ambient_ * lightUBO.diffuse[index];
+}
+
+void VulkanRenderer::SetMatrixUBO(const Matrix4& model, const Matrix4& projection, const Matrix4& view)
+{
+    matrixUBO.modelMatrix = model;
+    matrixUBO.projectionMatrix = projection;
+    matrixUBO.viewMatrix = view;
 }
 
 
@@ -989,6 +1299,7 @@ void VulkanRenderer::createLogicalDevice() {
 
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.fillModeNonSolid = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

@@ -35,7 +35,7 @@ const bool enableValidationLayers = true;
 enum class BufferType {
     CameraUBO,
     LightUBO,
-    // Add other UBO types here
+    MatrixUBO
 };
 
 const std::vector<const char*> validationLayers = {
@@ -140,6 +140,11 @@ struct CameraUBO { /// A UniformBufferObject
     Matrix4 projectionMatrix;
     Matrix4 viewMatrix;
 };
+struct MatrixUBO { /// A UniformBufferObject
+    Matrix4 projectionMatrix;
+    Matrix4 viewMatrix;
+    Matrix4 modelMatrix;
+};
 
 struct PushConstant {
     Matrix4 modelMatrix; 
@@ -186,8 +191,10 @@ public: /// Member functions
     void SetCameraUBO(const Matrix4& projection, const Matrix4& view);
     void SetPushConstant(const Matrix4& model, size_t index);
     void SetLightUBO(Vec4 lightPos_, Vec4 specular_, Vec4 diffuse_, float ambient_, size_t index);
+    void SetMatrixUBO(const Matrix4& model, const Matrix4& projection, const Matrix4& view);
     Sampler2D Create2DTextureImage(const char* texureFile);
-    VkPipeline CreateGraphicsPipeline(const char* vertFile, const char* fragFile, const char* tessCtrlFile, const char* tessEvalFile);
+    void CreateGraphicsPipeline(const char* vertFile, const char* fragFile);
+    void CreateGraphicsPipelineTessilation(const char* vertFile, const char* fragFile, const char* tessCtrlFile, const char* tessEvalFile);
     IndexedVertexBuffer LoadModelIndexed(const char* filename);
     void RecreateSwapChain();
 
@@ -205,9 +212,13 @@ private: /// Private member variables
     VkDevice device;
     VkRenderPass renderPass;
     VkDescriptorPool descriptorPool;
+    VkDescriptorPool descriptorPoolTessilation;
     VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorSetLayout descriptorSetLayoutTessilation;
     VkPipelineLayout pipelineLayout;
+    VkPipelineLayout pipelineLayoutTessilation;
     VkPipeline graphicsPipeline;
+    VkPipeline graphicsPipelineTessilation;
     
    
     VkImage depthImage;
@@ -221,6 +232,7 @@ private: /// Private member variables
 
     /// These are in vectors because they depend of the number of swapchains
     std::vector<VkDescriptorSet> descriptorSets;
+    std::vector<VkDescriptorSet> descriptorSetsTessilation;
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -230,6 +242,7 @@ private: /// Private member variables
     std::vector<VkImageView> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
+
    
     VkQueue graphicsQueue;
     VkQueue presentQueue;
@@ -237,9 +250,12 @@ private: /// Private member variables
     CameraUBO cameraUBO;
     static const int numLights = 3;
     LightUBO lightUBO;
+    MatrixUBO matrixUBO;
     std::vector<PushConstant> pushConstants;// create vetor
     std::vector<IndexedVertexBuffer> indexedVertexBufferCollection;
+    std::vector<IndexedVertexBuffer> indexedVertexBufferCollectionTessilation;
     std::vector<Sampler2D> textures;
+    std::vector<Sampler2D> texturesTessilation;
    //IndexedVertexBuffer indexedVertexBufferCollection;
     //std::vector<BufferMemory> uniformBuffers;
     //BufferMemory uniformBufferData;
@@ -247,6 +263,7 @@ private: /// Private member variables
     std::unordered_map<BufferType, void*> UBOMap = {
      {BufferType::CameraUBO, &cameraUBO},   // BufferType::Camera corresponds to cameraUBO
      {BufferType::LightUBO, &lightUBO}, // BufferType::Another corresponds to anotherUBO
+     {BufferType::MatrixUBO, &matrixUBO}, // BufferType::Another corresponds to anotherUBO
      // Add other UBOs as necessary
     };
 
@@ -262,6 +279,7 @@ private: /// Member functions
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     void createRenderPass();
     void CreateDescriptorSetLayout();
+    void CreateDescriptorSetLayoutTessilation();
    
     void createFramebuffers();
     void createCommandPool();
@@ -283,7 +301,9 @@ private: /// Member functions
     template<class T>
     std::vector<BufferMemory>CreateUniformBuffers();
     void CreateDescriptorPool();
+    void CreateDescriptorPoolTessilation();
     void CreateDescriptorSets();
+    void CreateDescriptorSetsTessilation();
     void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
     void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void CreateCommandBuffers();

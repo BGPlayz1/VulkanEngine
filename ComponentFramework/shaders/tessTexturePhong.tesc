@@ -1,14 +1,13 @@
 #version 450 
 layout(vertices = 3) out; // Specifies that this is a tessellation control shader for triangles
+const int MAX_LIGHTS = 3;
 
-// Input variables (from previous shader stages)
-layout(location = 0) in vec2 uvCoordFromVert[];   // Input vertex UV coordinates
-layout(location = 1) in vec3 normalFromVert[];     // Input vertex normals
-layout(location = 2) in float vertDistance[];      // Input vertex distances
+layout (location = 0) in vec2 uvCoordFromVert[];
+layout (location = 1) in vec3 normalFromVert[];
+layout (location = 2) in float vertDistance[];
 
-// Output variables (to be passed to tessellation evaluation shader)
-layout(location = 3) out vec2 uvCoordFromCtrl[];   // Output UV coordinates for tessellation evaluation
-layout(location = 4) out vec3 normalFromCtrl[];    // Output normals for tessellation evaluation
+layout (location = 0) out vec2 uvCoordFromCtrl[];
+layout (location = 1) out vec3 normalFromCtrl[];
 
 void main() {
     // Pass through input vertices to tessellation evaluation stage
@@ -17,17 +16,15 @@ void main() {
     normalFromCtrl[gl_InvocationID] = normalFromVert[gl_InvocationID];
 
     // Tessellation level setting
-    float tesslevel = 10.0;
+    float tesslevel = 30.0;
 
     // Set tessellation levels
     if (gl_InvocationID == 0) {
-    //        if(vertDistance[0] < 30.0){
-//            tesslevel = 20.0;
-//        }else if (vertDistance[0] < 50){
-//            tesslevel = 5.0;
-//        }else{
-//            tesslevel = 1.0;
-//        }
+         if (vertDistance[0] < 10){
+            tesslevel = 5.0;
+        }else{
+            tesslevel = 2.0;
+        }
         gl_TessLevelInner[0] = tesslevel;
         gl_TessLevelOuter[0] = tesslevel;
         gl_TessLevelOuter[1] = tesslevel;

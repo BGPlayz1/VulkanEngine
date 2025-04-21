@@ -27,9 +27,9 @@ bool Scene0::OnCreate() {
 		
 		SDL_GetWindowSize(dynamic_cast<VulkanRenderer*>(renderer)->GetWindow(), &width, &height);
 		aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-		camera->Perspective(45.0f, aspectRatio, 0.5f, 20.0f);
+		camera->Perspective(100.0f, aspectRatio, 0.5f, 20.0f);
 		camera->LookAt(Vec3(0.0f, 0.0f, 5.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f));
-		
+		planeMatrix = MMath::translate(Vec3(-4.0f, 0.0f, 0.0f)) * MMath::rotate(45.0f, 0.0f, 1.0f, 0.0f) * MMath::scale(3.0f,3.0f,3.0f);
 		break;
 
 	case RendererType::OPENGL:
@@ -57,10 +57,17 @@ void Scene0::Update(const float deltaTime) {
 	static float elapsedTime = 0.0f;
 	elapsedTime += deltaTime;
 	mariosModelMatrix = MMath::rotate(elapsedTime * 90.0f, Vec3(0.0f, 1.0f, 0.0f));
-	mariosModelMatrix3 = MMath::translate(Vec3(2.0f, 0.0f, 0.0f));
-	mariosModelMatrix3 *= MMath::rotate(elapsedTime * 90.0f, Vec3(0.0f, -1.0f, 0.0f));
-	mariosModelMatrix2 = MMath::translate(Vec3(-2.0f, 0.0f, 0.0f));
-	mariosModelMatrix2 *= MMath::rotate(elapsedTime * 90.0f, Vec3(1.0f, 0.0f, 0.0f));
+	mariosModelMatrix2 = MMath::translate(Vec3(2.0f, 0.0f, -5.0f));
+	mariosModelMatrix2 *= MMath::rotate(elapsedTime * 90.0f, Vec3(0.0f, -1.0f, 0.0f));
+	mariosModelMatrix3 = MMath::translate(Vec3(-2.0f, 0.0f, 0.0f));
+	mariosModelMatrix3 *= MMath::rotate(elapsedTime * 90.0f, Vec3(1.0f, 0.0f, 0.0f));
+	mariosModelMatrix4 = MMath::translate(Vec3(0.0f, 2.0f, 0.0f));
+	mariosModelMatrix4 *= MMath::rotate(elapsedTime * 90.0f, Vec3(1.0f, 0.0f, 0.0f));
+	planeMatrix *= MMath::translate(Vec3(0.0f, 0.0f, -0.01f));
+
+
+	//planeMatrix *= MMath::rotate(elapsedTime * 1.0f, Vec3(1.0f, 0.0f, 0.0f));
+
 }
 
 void Scene0::Render() const {
@@ -74,6 +81,8 @@ void Scene0::Render() const {
 		vRenderer->SetPushConstant(mariosModelMatrix, 0);
 		vRenderer->SetPushConstant(mariosModelMatrix2, 1);
 		vRenderer->SetPushConstant(mariosModelMatrix3, 2);
+		vRenderer->SetPushConstant(mariosModelMatrix4, 3);
+		vRenderer->SetMatrixUBO(planeMatrix, camera->GetProjectionMatrix(), camera->GetViewMatrix());
 		vRenderer->SetLightUBO(Vec4(20.0f, 0.0f, 1.0f, 0.0f), Vec4(0.9, 0.0, 0.0, 0.0), Vec4(0.9, 0.0, 0.0, 0.0), float(0.1), 0); // creates multiple lights, values used in simplePhong.vert/frag
 		vRenderer->SetLightUBO(Vec4(-20.0f, 0.0f, 1.0f, 0.0f), Vec4(0.0, 0.9, 0.0, 0.0), Vec4(0.0, 0.9, 0.0, 0.0), float(0.1), 1);
 		vRenderer->SetLightUBO(Vec4(0.0f, 20.0f, 1.0f, 0.0f), Vec4(0.0, 0.0, 0.9, 0.0), Vec4(0.0, 0.0, 0.9, 0.0), float(0.1), 2);

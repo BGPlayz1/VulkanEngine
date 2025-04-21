@@ -17,6 +17,8 @@ private:
 	Matrix4 mariosModelMatrix;
 	Matrix4 mariosModelMatrix2;
 	Matrix4 mariosModelMatrix3;
+	Matrix4 mariosModelMatrix4;
+	Matrix4 planeMatrix;
 public:
 	explicit Scene0(Renderer* renderer_);
 	virtual ~Scene0();
